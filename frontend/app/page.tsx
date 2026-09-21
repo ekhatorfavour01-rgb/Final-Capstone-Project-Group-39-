@@ -559,7 +559,7 @@ export default function Home() {
                 <div key={p.id} className={`group rounded-2xl overflow-hidden transition border ${isDark ? "bg-[#1a1a1a] border-white/10 hover:border-white/20" : "bg-white border-zinc-200 shadow-sm hover:shadow-md hover:border-zinc-300"} ${view === "list" ? "flex gap-4 p-3" : ""}`}>
                   <div className={`relative flex items-center justify-center overflow-hidden ${isDark ? "bg-[#242424]" : "bg-zinc-50"} ${view === "list" ? "w-48 shrink-0 rounded-xl" : "h-[220px]"}`}>
                     
-                    <img src={p.image} alt={p.title} className="w-full h-full object-cover mix-blend-normal group-hover:scale-105 transition duration-300" />
+                    <img src={p.image} alt={p.title} referrerPolicy="no-referrer" onError={(event) => { event.currentTarget.onerror = null; event.currentTarget.src = "/product-placeholder.svg"; }} className="w-full h-full object-cover mix-blend-normal group-hover:scale-105 transition duration-300" />
                     {p.badge && <span className={`absolute top-3 left-3 text-[11px] font-bold px-2 py-1 rounded-full ${p.badge === "New" ? "bg-[#00d084] text-white" : "bg-[#ff4d4d] text-white"}`}>{p.badge}</span>}
                     {p.discount && <span className="absolute top-3 left-3 text-[11px] font-bold px-2 py-1 rounded-full bg-[#ff4d4d] text-white">{p.discount}</span>}
                     <button onClick={() => toggleWishlist(p.id)} className={`absolute top-3 right-3 size-7 rounded-full backdrop-blur flex items-center justify-center border transition ${isDark ? "bg-black/60 border-white/10 hover:bg-black" : "bg-white/90 border-zinc-200 hover:bg-white shadow-sm"} cursor-pointer`}>
