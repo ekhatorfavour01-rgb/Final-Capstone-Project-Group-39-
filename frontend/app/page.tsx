@@ -110,8 +110,8 @@ export default function Home() {
   const [sortBy, setSortBy] = useState("Recommended");
   const [view, setView] = useState<"grid" | "list">("grid");
   const [wishlist, setWishlist] = useState<number[]>([3, 6, 10]);
-  const [cart, setCart] = useState<number[]>([1, 7]);
-  const [showMega, setShowMega] = useState(false);
+  const [cart, setCart] = useState<number[]>([]);
+  const [openNav, setOpenNav] = useState<string | null>(null);
   const [mobileFilterOpen, setMobileFilterOpen] = useState(false);
   const [theme, setTheme] = useState<"dark" | "light">("light");
   const [showProfile, setShowProfile] = useState(false);
@@ -122,7 +122,30 @@ export default function Home() {
 
   const toggleBrand = (b: string) => setSelectedBrands((p) => (p.includes(b) ? p.filter((x) => x !== b) : [...p, b]));
   const toggleWishlist = (id: number) => setWishlist((p) => (p.includes(id) ? p.filter((x) => x !== id) : [...p, id]));
-  const toggleCart = (id: number) => setCart((p) => (p.includes(id) ? p.filter((x) => x !== id) : [...p, id]));
+  const addToCart = (id: number) => setCart((p) => (p.includes(id) ? p : [...p, id]));
+  const removeFromCart = (id: number) => setCart((p) => p.filter((x) => x !== id));
+  const clearCart = () => setCart([]);
+  const addWishlistToCart = () => setCart((p) => Array.from(new Set([...p, ...wishlist])));
+  const openCart = () => {
+    setOpenNav(null);
+    setShowSearch(false);
+    setCartView("cart");
+  };
+  const handleCartButton = (id: number) => {
+    if (cart.includes(id)) {
+      openCart();
+    } else {
+      addToCart(id);
+    }
+  };
+  const handleSearchKeyDown = (event: React.KeyboardEvent<HTMLInputElement>) => {
+    if (event.key === "Enter") {
+      event.preventDefault();
+      setShowSearch(false);
+      setCartView("shop");
+      document.getElementById("products")?.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+  };
 
   const filtered = useMemo(() => {
     let r = [...PRODUCTS];
@@ -168,12 +191,12 @@ export default function Home() {
         <div className="flex items-center gap-4 px-4 lg:px-8 py-3">
           
           <div className="flex items-center gap-6 shrink-0">
-            <a href="#" className="flex items-center gap-2">
+            <button onClick={() => { setCartView("shop"); setSearch(""); setOpenNav(null); }} className="flex items-center gap-2 cursor-pointer">
               <span className={`size-8 rounded-full flex items-center justify-center ${isDark ? "bg-white text-black" : "bg-zinc-900 text-white"}`}>
                 <ShoppingBag size={18} />
               </span>
               <span className="text-lg font-bold tracking-tight">Project 39</span>
-            </a>
+            </button>
             <nav className="hidden xl:flex items-center gap-1 text-[13px] font-medium">
               {[
                 { label: "Catalog", icon: LayoutGrid, align: "left-0" },
@@ -182,11 +205,11 @@ export default function Home() {
                 { label: "Support", icon: FileText, align: "right-0" },
               ].map((item) => (
                 <div key={item.label} className="relative group/nav">
-                  <button className={`cursor-pointer flex items-center gap-1.5 px-3 py-1.5 rounded-full transition ${isDark ? "group-hover/nav:bg-white group-hover/nav:text-black" : "group-hover/nav:bg-zinc-900 group-hover/nav:text-white"}`}>
+                  <button onClick={() => setOpenNav(openNav === item.label ? null : item.label)} className={`cursor-pointer flex items-center gap-1.5 px-3 py-1.5 rounded-full transition ${isDark ? "group-hover/nav:bg-white group-hover/nav:text-black" : "group-hover/nav:bg-zinc-900 group-hover/nav:text-white"}`}>
                     <item.icon size={14} /> {item.label} <ChevronDown size={14} className="group-hover/nav:rotate-180 transition" />
                   </button>
                   
-                  <div className={`absolute ${item.align} top-full mt-2 hidden group-hover/nav:block w-[960px] max-w-[min(960px,calc(100vw-32px))] rounded-xl p-6 shadow-2xl z-50 border ${isDark ? "bg-[#141414] border-white/10" : "bg-white border-zinc-200"}`}>
+                  <div className={`absolute ${item.align} top-full mt-2 ${openNav === item.label ? "block" : "hidden"} w-[960px] max-w-[min(960px,calc(100vw-32px))] rounded-xl p-6 shadow-2xl z-50 border ${isDark ? "bg-[#141414] border-white/10" : "bg-white border-zinc-200"}`}>
                     <div className="grid grid-cols-4 gap-6">
                       <div className="col-span-3 grid grid-cols-3 gap-6 text-xs leading-6">
                         <div><p className={`font-semibold mb-2 ${isDark ? "text-white" : "text-zinc-900"}`}>Topwear</p><div className={`space-y-1 ${isDark ? "text-zinc-400" : "text-zinc-600"}`}><p className={isDark ? "hover:text-white cursor-pointer" : "hover:text-zinc-900 cursor-pointer"}>Casual Shirts</p><p className={isDark ? "hover:text-white cursor-pointer" : "hover:text-zinc-900 cursor-pointer"}>T-Shirts</p><p className={isDark ? "hover:text-white cursor-pointer" : "hover:text-zinc-900 cursor-pointer"}>Formal Shirts</p><p className={isDark ? "hover:text-white cursor-pointer" : "hover:text-zinc-900 cursor-pointer"}>Jackets</p><p className={isDark ? "hover:text-white cursor-pointer" : "hover:text-zinc-900 cursor-pointer"}>Rain Jackets</p><p className={isDark ? "hover:text-white cursor-pointer" : "hover:text-zinc-900 cursor-pointer"}>Blazers & Coats</p><p className={isDark ? "hover:text-white cursor-pointer" : "hover:text-zinc-900 cursor-pointer"}>Sweatshirts</p><p className={isDark ? "hover:text-white cursor-pointer" : "hover:text-zinc-900 cursor-pointer"}>Suits</p><p className={`font-semibold mt-3 ${isDark ? "text-white" : "text-zinc-900"}`}>Festive Wear</p><p className={isDark ? "hover:text-white cursor-pointer" : "hover:text-zinc-900 cursor-pointer"}>Kurtas & Kurta Sets</p><p className={isDark ? "hover:text-white cursor-pointer" : "hover:text-zinc-900 cursor-pointer"}>Shervanis</p><p className={isDark ? "hover:text-white cursor-pointer" : "hover:text-zinc-900 cursor-pointer"}>Nehru Jackets</p></div></div>
@@ -218,6 +241,7 @@ export default function Home() {
                 <input
                   value={search}
                   onFocus={() => setShowSearch(true)}
+                  onKeyDown={handleSearchKeyDown}
                   onChange={(e) => { setSearch(e.target.value); setShowSearch(true); }}
                   placeholder="Search for products, brands and more..."
                   className={`bg-transparent outline-none text-sm w-full ${isDark ? "placeholder:text-zinc-500 text-white" : "placeholder:text-zinc-500 text-zinc-900"}`}
@@ -228,7 +252,7 @@ export default function Home() {
                 <div className={`absolute top-full mt-2 w-full rounded-2xl border shadow-2xl p-3 z-50 ${isDark ? "bg-[#1a1a1a] border-white/10" : "bg-white border-zinc-200"}`}>
                   <div className={`flex items-center gap-2 rounded-xl px-3 py-2 border mb-3 ${isDark ? "bg-black/40 border-white/10" : "bg-zinc-50 border-zinc-200"}`}>
                     <Search size={14} className="text-zinc-500" />
-                    <input autoFocus value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search products, pages..." className={`bg-transparent outline-none text-sm w-full ${isDark ? "text-white placeholder:text-zinc-500" : "text-zinc-900 placeholder:text-zinc-500"}`} />
+                    <input autoFocus value={search} onChange={(e) => setSearch(e.target.value)} onKeyDown={handleSearchKeyDown} placeholder="Search products, pages..." className={`bg-transparent outline-none text-sm w-full ${isDark ? "text-white placeholder:text-zinc-500" : "text-zinc-900 placeholder:text-zinc-500"}`} />
                   </div>
                   <p className={`text-xs mb-2 ${isDark ? "text-zinc-400" : "text-zinc-500"}`}>Suggestions</p>
                   <div className="space-y-1">
@@ -252,7 +276,7 @@ export default function Home() {
 
           
           <div className="flex items-center gap-1 lg:gap-2 shrink-0">
-            <button onClick={() => setCartView("cart")} className={`relative p-2 rounded-full transition ${isDark ? "hover:bg-white/10" : "hover:bg-zinc-100"} cursor-pointer`}>
+            <button onClick={openCart} className={`relative p-2 rounded-full transition ${isDark ? "hover:bg-white/10" : "hover:bg-zinc-100"} cursor-pointer`}>
               <ShoppingBag size={20} />
               {cart.length > 0 && <span className="absolute -top-0.5 -right-0.5 bg-[#ff2a5a] text-white text-[10px] size-4 rounded-full flex items-center justify-center font-bold">{cart.length}</span>}
             </button>
@@ -270,9 +294,9 @@ export default function Home() {
                   <div className="p-2 space-y-1 text-sm">
                     <button onClick={() => setShowProfile(false)} className={`w-full flex items-center gap-2 px-3 py-2 rounded-xl text-left ${isDark ? "hover:bg-white/10 text-white" : "hover:bg-zinc-100 text-zinc-900"} cursor-pointer`}><User size={16} /> My Profile</button>
                     <button onClick={() => { setShowProfile(false); setCartView("shop"); }} className={`w-full flex items-center gap-2 px-3 py-2 rounded-xl text-left ${isDark ? "hover:bg-white/10 text-white" : "hover:bg-zinc-100 text-zinc-900"} cursor-pointer`}><Heart size={16} /> My Wishlist</button>
-                    <button onClick={() => { setShowProfile(false); setCartView("cart"); }} className={`w-full flex items-center gap-2 px-3 py-2 rounded-xl text-left ${isDark ? "hover:bg-white/10 text-white" : "hover:bg-zinc-100 text-zinc-900"} cursor-pointer`}><Package size={16} /> My Orders</button>
-                    <button className={`cursor-pointer w-full flex items-center gap-2 px-3 py-2 rounded-xl text-left ${isDark ? "hover:bg-white/10 text-white" : "hover:bg-zinc-100 text-zinc-900"}`}><Gift size={16} /> Gift Cards</button>
-                    <button className={`cursor-pointer w-full flex items-center gap-2 px-3 py-2 rounded-xl text-left ${isDark ? "hover:bg-white/10 text-white" : "hover:bg-zinc-100 text-zinc-900"}`}><RotateCcw size={16} /> Return & Refunds</button>
+                    <button onClick={() => { setShowProfile(false); openCart(); }} className={`w-full flex items-center gap-2 px-3 py-2 rounded-xl text-left ${isDark ? "hover:bg-white/10 text-white" : "hover:bg-zinc-100 text-zinc-900"} cursor-pointer`}><Package size={16} /> My Orders</button>
+                    <button onClick={() => setShowProfile(false)} className={`cursor-pointer w-full flex items-center gap-2 px-3 py-2 rounded-xl text-left ${isDark ? "hover:bg-white/10 text-white" : "hover:bg-zinc-100 text-zinc-900"}`}><Gift size={16} /> Gift Cards</button>
+                    <button onClick={() => setShowProfile(false)} className={`cursor-pointer w-full flex items-center gap-2 px-3 py-2 rounded-xl text-left ${isDark ? "hover:bg-white/10 text-white" : "hover:bg-zinc-100 text-zinc-900"}`}><RotateCcw size={16} /> Return & Refunds</button>
                     <div className={`h-px my-1 ${isDark ? "bg-white/10" : "bg-zinc-100"}`} />
                     <button onClick={() => setShowProfile(false)} className="w-full flex items-center gap-2 px-3 py-2 rounded-xl text-left text-[#ff2a5a] hover:bg-[#ff2a5a]/10 cursor-pointer"><LogOut size={16} /> Logout</button>
                   </div>
@@ -286,7 +310,7 @@ export default function Home() {
         <div className="md:hidden px-4 pb-3">
           <div className={`flex items-center gap-2 rounded-xl px-3 py-2 border ${isDark ? "bg-white/[0.06] border-white/10" : "bg-zinc-100 border-zinc-200"}`}>
             <Search size={16} className={isDark ? "text-zinc-400" : "text-zinc-500"} />
-            <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search products..." className={`bg-transparent outline-none text-sm w-full ${isDark ? "placeholder:text-zinc-500 text-white" : "placeholder:text-zinc-500 text-zinc-900"}`} />
+            <input value={search} onChange={(e) => { setSearch(e.target.value); setShowSearch(true); }} onKeyDown={handleSearchKeyDown} placeholder="Search products..." className={`bg-transparent outline-none text-sm w-full ${isDark ? "placeholder:text-zinc-500 text-white" : "placeholder:text-zinc-500 text-zinc-900"}`} />
           </div>
         </div>
       </header>
@@ -324,11 +348,14 @@ export default function Home() {
           </div>
           <div className="grid lg:grid-cols-3 gap-6">
             <div className="lg:col-span-2 space-y-4">
-              <div className={`rounded-xl p-4 flex items-center justify-between border ${isDark ? "bg-[#141414] border-white/10" : "bg-white border-zinc-200"}`}>
+              <button onClick={addWishlistToCart} className={`w-full rounded-xl p-4 flex items-center justify-between border text-left cursor-pointer ${isDark ? "bg-[#141414] border-white/10 hover:bg-white/5" : "bg-white border-zinc-200 hover:bg-zinc-50"}`}>
                 <p className={`font-medium ${isDark ? "text-white" : "text-zinc-900"}`}>Add more from Wishlist</p>
                 <ArrowRight size={18} className="text-zinc-500" />
+              </button>
+              <div className="flex justify-end">
+                <button onClick={clearCart} disabled={cart.length === 0} className="text-sm text-[#ff2a5a] font-medium hover:underline cursor-pointer disabled:cursor-not-allowed disabled:opacity-40">Clear cart</button>
               </div>
-              {PRODUCTS.filter(p => cart.includes(p.id)).slice(0,2).concat(PRODUCTS.filter(p => !cart.includes(p.id)).slice(0, Math.max(0,2-cart.length))).map(p => (
+              {PRODUCTS.filter(p => cart.includes(p.id)).map(p => (
                 <div key={p.id} className={`rounded-xl overflow-hidden border flex ${isDark ? "bg-[#141414] border-white/10" : "bg-white border-zinc-200"}`}>
                   <div className={`w-40 shrink-0 flex items-center justify-center p-4 relative ${isDark ? "bg-[#242424]" : "bg-zinc-50"}`}>
                     <span className={`absolute top-2 left-2 size-5 rounded border flex items-center justify-center ${isDark ? "bg-white border-white" : "bg-white border-zinc-300"}`}><Check size={12} className="text-black" /></span>
@@ -338,7 +365,7 @@ export default function Home() {
                   <div className="flex-1 p-4">
                     <div className="flex items-start justify-between gap-2">
                       <span className="text-xs border border-[#00d084] text-[#00d084] rounded-full px-2 py-0.5">Delivery by 24 January 2026</span>
-                      <button className="cursor-pointer" onClick={() => toggleCart(p.id)}><X size={16} className="text-zinc-500" /></button>
+                      <button aria-label={`Remove ${p.title} from cart`} className="cursor-pointer" onClick={() => removeFromCart(p.id)}><X size={16} className="text-zinc-500" /></button>
                     </div>
                     <p className="text-xs text-zinc-500 mt-2">Order ID: XYZ-42324234</p>
                     <p className={`font-semibold mt-1 ${isDark ? "text-white" : "text-zinc-900"}`}>{p.brand}</p>
@@ -358,13 +385,13 @@ export default function Home() {
                 <input placeholder="Add discount code" className={`w-full mt-2 rounded-lg px-3 py-2 text-xs outline-none border ${isDark ? "bg-black border-white/10 text-white placeholder:text-zinc-600" : "bg-white border-zinc-200 text-zinc-900 placeholder:text-zinc-400"}`} />
               </div>
               <div className="mt-4 space-y-3 text-sm">
-                <div className="flex justify-between"><span className="text-zinc-500">Subtotal</span><span className={isDark ? "text-white font-medium" : "text-zinc-900 font-medium"}>${(cart.reduce((s,id)=> s + (PRODUCTS.find(p=>p.id===id)?.price||0),0) || 229.98).toFixed(2)}</span></div>
-                <div className="flex justify-between"><span className="text-zinc-500">Shipping Cost (+)</span><span className={isDark ? "text-white" : "text-zinc-900"}>$10.66</span></div>
-                <div className="flex justify-between"><span className="text-zinc-500">Discount (-)</span><span className={isDark ? "text-white" : "text-zinc-900"}>$30.00</span></div>
+                <div className="flex justify-between"><span className="text-zinc-500">Subtotal</span><span className={isDark ? "text-white font-medium" : "text-zinc-900 font-medium"}>${cart.reduce((s,id)=> s + (PRODUCTS.find(p=>p.id===id)?.price||0),0).toFixed(2)}</span></div>
+                <div className="flex justify-between"><span className="text-zinc-500">Shipping Cost (+)</span><span className={isDark ? "text-white" : "text-zinc-900"}>{cart.length ? "$10.66" : "$0.00"}</span></div>
+                <div className="flex justify-between"><span className="text-zinc-500">Discount (-)</span><span className={isDark ? "text-white" : "text-zinc-900"}>$0.00</span></div>
                 <div className={`h-px ${isDark ? "bg-white/10" : "bg-zinc-200"}`} />
-                <div className="flex justify-between font-semibold"><span className={isDark ? "text-white" : "text-zinc-900"}>Total Payable</span><span className={isDark ? "text-white" : "text-zinc-900"}>${(cart.reduce((s,id)=> s + (PRODUCTS.find(p=>p.id===id)?.price||0),10.66-30) || 240.64).toFixed(2)}</span></div>
+                <div className="flex justify-between font-semibold"><span className={isDark ? "text-white" : "text-zinc-900"}>Total Payable</span><span className={isDark ? "text-white" : "text-zinc-900"}>${(cart.reduce((s,id)=> s + (PRODUCTS.find(p=>p.id===id)?.price||0), cart.length ? 10.66 : 0)).toFixed(2)}</span></div>
               </div>
-              <button onClick={() => setShowFakePayment(true)} className={`w-full mt-6 py-3 rounded-full text-sm font-semibold ${isDark ? "bg-white text-black" : "bg-zinc-900 text-white"} cursor-pointer`}>Pay Now</button>
+              <button disabled={cart.length === 0} onClick={() => setShowFakePayment(true)} className={`w-full mt-6 py-3 rounded-full text-sm font-semibold ${isDark ? "bg-white text-black disabled:bg-white/20 disabled:text-zinc-500" : "bg-zinc-900 text-white disabled:bg-zinc-200 disabled:text-zinc-400"} cursor-pointer disabled:cursor-not-allowed`}>Pay Now</button>
               <p className="text-xs text-zinc-500 text-center mt-2">Fake payment — no real money charged.</p>
             </div>
           </div>
@@ -465,8 +492,6 @@ export default function Home() {
               />
             ))}
           </div>
-          <button className={`cursor-pointer text-xs mt-2 text-left ${isDark ? "text-zinc-400" : "text-zinc-500"}`}>5+ more</button>
-
           
           <div className={`h-px my-5 ${isDark ? "bg-white/10" : "bg-zinc-200"}`} />
           <h3 className={`font-semibold ${isDark ? "text-white" : "text-zinc-900"}`}>Rating</h3>
@@ -549,7 +574,7 @@ export default function Home() {
                       {p.oldPrice && <span className="text-xs text-zinc-500 line-through">${p.oldPrice.toFixed(2)}</span>}
                       <span className={`ml-auto flex items-center gap-1 text-[11px] ${isDark ? "text-zinc-400" : "text-zinc-500"}`}><Star size={10} className="fill-amber-400 text-amber-400" />{p.rating}</span>
                     </div>
-                    <button onClick={() => toggleCart(p.id)}
+                    <button onClick={() => handleCartButton(p.id)}
                       className={`mt-3 w-full rounded-full py-2 text-xs font-semibold flex items-center justify-center gap-1.5 border transition ${isDark ? (isCart ? "bg-white text-black border-white" : "bg-white text-black hover:bg-zinc-200 border-white") : (isCart ? "bg-zinc-900 text-white border-zinc-900" : "bg-zinc-900 text-white hover:bg-black border-zinc-900")} cursor-pointer`}
                     >
                       {isCart ? <>Go to Cart <ArrowRight size={14} /></> : <>Add to Cart <ShoppingBag size={14} /></>}
@@ -568,23 +593,12 @@ export default function Home() {
             </div>
           )}
 
-          
-          <div className="flex justify-center mt-8 gap-2">
-            <button className={`cursor-pointer size-8 rounded-full text-sm font-bold ${isDark ? "bg-white text-black" : "bg-zinc-900 text-white"}`}>1</button>
-            <button className={`cursor-pointer size-8 rounded-full text-sm ${isDark ? "bg-white/10 text-white" : "bg-zinc-100 text-zinc-600 border border-zinc-200"}`}>2</button>
-            <button className={`cursor-pointer size-8 rounded-full text-sm ${isDark ? "bg-white/10 text-white" : "bg-zinc-100 text-zinc-600 border border-zinc-200"}`}>3</button>
-            <span className="px-2 text-zinc-500">…</span>
-            <button className={`cursor-pointer size-8 rounded-full ${isDark ? "bg-white/10 text-white" : "bg-zinc-100 text-zinc-600 border border-zinc-200"}`}><ArrowRight size={14} className="mx-auto" /></button>
-          </div>
         </main>
       </div>
       )}
 
       
-      <CategoryClickHandler category={category} setCategory={setCategory} />
-
-      
-      <button className={`cursor-pointer fixed bottom-4 right-4 text-xs font-bold px-4 py-2 rounded-full shadow-xl border hidden lg:block ${isDark ? "bg-white text-black border-black/10" : "bg-zinc-900 text-white border-zinc-900"}`}>Buy Now</button>
+      <button onClick={openCart} className={`cursor-pointer fixed bottom-4 right-4 text-xs font-bold px-4 py-2 rounded-full shadow-xl border hidden lg:block ${isDark ? "bg-white text-black border-black/10" : "bg-zinc-900 text-white border-zinc-900"}`}>Buy Now</button>
 
       {showFakePayment && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
@@ -602,7 +616,7 @@ export default function Home() {
                   <input placeholder="MM / YY" className={`rounded-xl px-3 py-2.5 text-sm border outline-none ${isDark ? "bg-black border-white/10 text-white placeholder:text-zinc-500" : "bg-zinc-50 border-zinc-200 text-zinc-900 placeholder:text-zinc-400"}`} />
                   <input placeholder="CVC" className={`rounded-xl px-3 py-2.5 text-sm border outline-none ${isDark ? "bg-black border-white/10 text-white placeholder:text-zinc-500" : "bg-zinc-50 border-zinc-200 text-zinc-900 placeholder:text-zinc-400"}`} />
                 </div>
-                <button onClick={() => { setPaymentSuccess(true); setTimeout(() => { setCart([]); setShowFakePayment(false); setPaymentSuccess(false); setCartView("shop"); }, 1200); }} className={`w-full py-3 rounded-full text-sm font-semibold cursor-pointer ${isDark ? "bg-white text-black" : "bg-zinc-900 text-white"}`}>Pay ${(cart.reduce((s,id)=> s + (PRODUCTS.find(p=>p.id===id)?.price||0),10.66-30) || 240.64).toFixed(2)}</button>
+                <button onClick={() => { setPaymentSuccess(true); setTimeout(() => { setCart([]); setShowFakePayment(false); setPaymentSuccess(false); setCartView("shop"); }, 1200); }} className={`w-full py-3 rounded-full text-sm font-semibold cursor-pointer ${isDark ? "bg-white text-black" : "bg-zinc-900 text-white"}`}>Pay ${(cart.reduce((s,id)=> s + (PRODUCTS.find(p=>p.id===id)?.price||0), cart.length ? 10.66 : 0)).toFixed(2)}</button>
                 <button onClick={() => setShowFakePayment(false)} className={`w-full py-2.5 rounded-full text-sm font-medium border cursor-pointer ${isDark ? "border-white/10 text-zinc-400 hover:bg-white/5" : "border-zinc-200 text-zinc-600 hover:bg-zinc-50"}`}>Cancel</button>
               </div>
             ) : (
@@ -632,12 +646,4 @@ export default function Home() {
       </footer>
     </div>
   );
-}
-
-function CategoryClickHandler({ setCategory }: { category: string; setCategory: (c: string) => void }) {
-
-  if (typeof document !== "undefined") {
-
-  }
-  return null;
 }
