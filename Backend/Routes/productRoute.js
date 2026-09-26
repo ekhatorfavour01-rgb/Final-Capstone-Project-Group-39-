@@ -1,4 +1,5 @@
-<<<<<<< HEAD
+
+
 const express = require("express");
 
 const router = express.Router();
@@ -44,3 +45,9 @@ const router = express.Router();
 
 module.exports = router;
 >>>>>>> c862a1b46cc7b01f56ac2ff78cb9bd8d26d46994
+=======
+const express = require('express');
+const router = express.Router();
+
+module.exports = router;
+>>>>>>> origin/main
