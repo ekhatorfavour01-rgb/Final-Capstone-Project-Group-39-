@@ -5,7 +5,7 @@ const { placeOrder, getMyOrders, getOrderById} = require('../Controllers/orderCo
 
 const authMiddleware = require('../Middleware/authMiddleware');
 const validate = require('../Middleware/validateMiddleware');
-const { validatePlaceOrder } = require('../Validators/orderValidator');
+const { validatePlaceOrder } = require('../Validations/orderValidation');
 
 router.post('/', authMiddleware, validate(validatePlaceOrder), placeOrder);
 router.get('/my-orders', authMiddleware, getMyOrders);
