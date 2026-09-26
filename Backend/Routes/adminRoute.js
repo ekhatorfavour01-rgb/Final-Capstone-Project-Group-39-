@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 
+<<<<<<< HEAD
 
 const { createProduct, updateProduct, deleteProduct, getAllOrders, getOrderById, updateOrderStatus} = require('../Controllers/adminController');
 
@@ -25,4 +26,6 @@ router.get('/orders', getAllOrders);
 router.get('/orders/:id', getOrderById);
 router.put('/orders/:id/status', validate(validateOrderStatusUpdate), updateOrderStatus);
 
+=======
+>>>>>>> c6b52293299c414f55e7cec4902e12891df56e76
 module.exports = router;
