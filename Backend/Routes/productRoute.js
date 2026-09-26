@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 const express = require("express");
 
 const router = express.Router();
@@ -37,3 +38,9 @@ router.delete("/:id", deleteProduct);
 
 
 module.exports = router;
+=======
+const express = require('express');
+const router = express.Router();
+
+module.exports = router;
+>>>>>>> c862a1b46cc7b01f56ac2ff78cb9bd8d26d46994
