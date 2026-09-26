@@ -1,15 +1,12 @@
-const dns = require('node:dns');
-dns.setServers(['8.8.8.8', '1.1.1.1']); // Set DNS servers to Google and Cloudflare
-
-
 const express = require('express');
 const cors = require('cors');
-const { POST } = require("./Config/env");
-const connentDB = require("./Config/db");
+const { PORT } = require("./Config/env");
+const connectDB = require("./Config/db");
 
 const app = express();
 app.use(cors());
 app.use(express.json());
+app.use(express.urlencoded({ extended: false }));
 
 const authRoutes = require('./Routes/authRoute');
 const userRoutes = require('./Routes/userRoute');
@@ -41,9 +38,9 @@ app.use((req,res) => {
 // Error handling middleware
 app.use(errorHandlerMiddleware);
 
-connentDB().then(() => {
-    app.listen(POST, () => {
-        console.log(`Server is running on port ${POST}`);
+connectDB().then(() => {
+    app.listen(PORT, () => {
+        console.log(`Server is running on port ${PORT}`);
     });
 }).catch((error) => {
     console.error('Failed to connect to the database:', error);

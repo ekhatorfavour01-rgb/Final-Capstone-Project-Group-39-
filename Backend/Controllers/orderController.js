@@ -1,7 +1,7 @@
 const orderService = require('../Services/orderService');
 const { successResponse } = require('../Utils/apiResponse');
 
-const placeOrder = async (req, res) => {
+const placeOrder = async (req, res, next) => {
 
     try {
         const { shippingAddress } = req.body;
