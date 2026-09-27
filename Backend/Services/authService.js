@@ -41,4 +41,22 @@ const login = async ({ email, password }) => {
     };
 };
 
-module.exports = { register, login };
+const changePassword = async (userId, currentPassword, newPassword) => {
+
+    const user = await User.findById(userId).select('+password');
+
+    if (!user) {
+        throw createError('User not found.', 404);
+    }
+
+    const isMatch = await user.comparePassword(currentPassword);
+
+    if (!isMatch) {
+        throw createError('Current password is incorrect.', 400);
+    }
+
+    user.password = newPassword;
+    await user.save();
+}
+
+module.exports = { register, login, changePassword };

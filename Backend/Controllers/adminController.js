@@ -1,5 +1,6 @@
 const productService = require('../Services/productService');
 const orderService = require('../Services/orderService');
+const User = require('../Models/User');
 const { successResponse } = require('../Utils/apiResponse');
 
 // ---- product (Admin only) -----
@@ -79,11 +80,26 @@ const updateOrderStatus = async (req, res, next) => {
 };
 
 
+// ------ Users (Admin only) ------
+const getAllUsers = async (req, res, next) => {
+
+    try {
+        const users = await User.find();
+
+        return successResponse(res, 200, 'Users fetched successfully', users);
+
+    } catch (error) {
+        next(error);
+    }
+}
+
+
 module.exports = {
     createProduct,
     updateProduct,
     deleteProduct,
     getAllOrders,
     getOrderById,
-    updateOrderStatus
+    updateOrderStatus,
+    getAllUsers
 }

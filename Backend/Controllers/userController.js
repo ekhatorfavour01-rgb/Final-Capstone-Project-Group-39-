@@ -1,5 +1,6 @@
 const User = require('../Models/User');
-const { successResponse } = require('../Utils/apiResponse');
+const authService = require('../Services/authService');
+const { successResponse, errorResponse } = require('../Utils/apiResponse');
 
 const createError = (message, statusCode) => {
     const error = new Error(message);
@@ -28,4 +29,22 @@ const updateProfile = async (req, res) => {
     return successResponse(res, 200, 'Profile updated successfully.', user);
 };
 
-module.exports = { getProfile, updateProfile };
+const changePassword = async (req, res, next) => {
+
+    try {
+        const { currentPassword, newPassword } = req.body;
+
+        if (!currentPassword || !newPassword || newPassword.length < 6) {
+            return errorResponse(res, 400, 'Current password and a new password (min 6 characters) are required');
+        }
+
+        await authService.changePassword(req.user.id, currentPassword, newPassword);
+
+        return successResponse(res, 200, 'Password changed successfully');
+
+    } catch (error) {
+        next(error);
+    }
+}
+
+module.exports = { getProfile, updateProfile, changePassword };
