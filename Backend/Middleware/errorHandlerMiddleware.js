@@ -1,7 +1,7 @@
 const errorHandlerMiddleware = (err, req, res, next) => {
     console.error('Error:', err.message);
 
-    //Handles a common Mongoose error: Invalide format
+    //Handles a common Mongoose error: Invalid format
     if (err.name === 'CastError') {
         return res.status(400).json({
             success: false,
@@ -19,7 +19,7 @@ const errorHandlerMiddleware = (err, req, res, next) => {
             data:null });
     }
 
-    // Default fallback - neve expose raw error detailes to the client
+    // Default fallback - never expose raw error details to the client
     res.status(err.statusCode || 500).json({
         success: false,
         message: err.message || 'Something went wrong, Please try again',
