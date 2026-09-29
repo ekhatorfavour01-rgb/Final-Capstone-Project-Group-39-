@@ -25,7 +25,7 @@ Use a private, randomly generated value for `JWT_SECRET`. Never commit `.env` or
 npm run dev
 ```
 
-The API base URL is `http://localhost:5001`. The health check is `GET http://localhost:5001/`.
+The API base URL is `http://localhost:3000`. The health check is `GET http://localhost:5000/`.
 
 ## Authentication and user-account endpoints
 
