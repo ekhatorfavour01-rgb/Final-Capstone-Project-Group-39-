@@ -13,7 +13,7 @@ const placeOrder = async (userId, shippingAddress) => {
     }
 
     const orderItems = [];
-    let totalAmout = 0;
+    let totalAmount = 0;
 
     for (const item of cart.items) {
         const product = item.product;
@@ -34,7 +34,7 @@ const placeOrder = async (userId, shippingAddress) => {
             quantity: item.quantity,
         });
 
-        totalAmout += product.price * item.quantity;
+        totalAmount += product.price * item.quantity;
 
         // Reduce stock since the order is being placed
         product.stock -= item.quantity;
