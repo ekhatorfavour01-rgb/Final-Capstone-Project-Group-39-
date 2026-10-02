@@ -902,9 +902,11 @@ export default function Home() {
             setCheckoutError("Enter the cardholder name.");
             return;
         }
-        const normalizedCardNumber = cardNumber.replace(/[\s-]/g, "");
-        if (!/^\d{12,19}$/.test(normalizedCardNumber)) {
-            setCheckoutError("Enter a valid card number.");
+        const normalizedCardNumber = cardNumber.replace(/\D/g, "");
+        if (!/^\d{13,19}$/.test(normalizedCardNumber)) {
+            setCheckoutError(
+                "Please enter a demo card number between 13 and 19 digits.",
+            );
             return;
         }
         const expiryMatch = /^(0[1-9]|1[0-2])\/(\d{2})$/.exec(expiryDate);
