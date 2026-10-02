@@ -594,6 +594,10 @@ export default function Home() {
     const [authError, setAuthError] = useState("");
     const [authSubmitting, setAuthSubmitting] = useState(false);
     const [shippingAddress, setShippingAddress] = useState("");
+    const [cardholderName, setCardholderName] = useState("");
+    const [cardNumber, setCardNumber] = useState("");
+    const [expiryDate, setExpiryDate] = useState("");
+    const [cvv, setCvv] = useState("");
     const [checkoutError, setCheckoutError] = useState("");
     const [checkoutSubmitting, setCheckoutSubmitting] = useState(false);
     const [orderReference, setOrderReference] = useState("");
@@ -894,6 +898,34 @@ export default function Home() {
             setCheckoutError("Enter a shipping address to place the order.");
             return;
         }
+        if (!cardholderName.trim()) {
+            setCheckoutError("Enter the cardholder name.");
+            return;
+        }
+        const normalizedCardNumber = cardNumber.replace(/[\s-]/g, "");
+        if (!/^\d{12,19}$/.test(normalizedCardNumber)) {
+            setCheckoutError("Enter a valid card number.");
+            return;
+        }
+        const expiryMatch = /^(0[1-9]|1[0-2])\/(\d{2})$/.exec(expiryDate);
+        if (!expiryMatch) {
+            setCheckoutError("Enter a valid expiry date in MM/YY format.");
+            return;
+        }
+        const expiryMonth = Number(expiryMatch[1]);
+        const expiryYear = 2000 + Number(expiryMatch[2]);
+        const now = new Date();
+        if (
+            expiryYear < now.getFullYear() ||
+            (expiryYear === now.getFullYear() && expiryMonth < now.getMonth() + 1)
+        ) {
+            setCheckoutError("The card expiry date must be in the future.");
+            return;
+        }
+        if (!/^\d{3,4}$/.test(cvv)) {
+            setCheckoutError("Enter a valid CVV.");
+            return;
+        }
         setCheckoutSubmitting(true);
         setCheckoutError("");
         try {
@@ -904,6 +936,10 @@ export default function Home() {
                 );
                 setOrderReference(order._id);
             }
+            setCardholderName("");
+            setCardNumber("");
+            setExpiryDate("");
+            setCvv("");
             setPaymentSuccess(true);
             setCart([]);
             setQuantities({});
@@ -985,6 +1021,10 @@ export default function Home() {
         const product = products.find((item) => item.id === id);
         return total + (product?.price || 0) * (quantities[String(id)] || 1);
     }, 0);
+    const checkoutItems = cart.flatMap((id) => {
+        const product = products.find((item) => item.id === id);
+        return product ? [{ product, quantity: quantities[String(id)] || 1 }] : [];
+    });
     const storeCategories = [
         "All",
         ...new Set(products.map((product) => product.category)),
@@ -2826,7 +2866,7 @@ export default function Home() {
                         className="absolute inset-0 bg-black/50 backdrop-blur-sm"
                     />
                     <div
-                        className={`relative w-full max-w-md rounded-2xl border p-6 shadow-2xl ${isDark ? "bg-[#1a1a1a] border-white/10" : "bg-white border-zinc-200"}`}>
+                        className={`relative w-full max-w-lg max-h-[90vh] overflow-y-auto rounded-2xl border p-6 shadow-2xl ${isDark ? "bg-[#1a1a1a] border-white/10" : "bg-white border-zinc-200"}`}>
                         <div className="flex items-center justify-between">
                             <h3
                                 className={`text-lg font-bold ${isDark ? "text-white" : "text-zinc-900"}`}>
@@ -2843,11 +2883,13 @@ export default function Home() {
                                 <p
                                     className={`text-sm ${isDark ? "text-zinc-400" : "text-zinc-600"}`}>
                                     This demo creates an order but does not
-                                    charge money or process card details.
+                                    charge money. Card details are validated in
+                                    this browser only and are not sent to or
+                                    stored by the backend.
                                 </p>
-                                {apiConfigured && (
+                                <section aria-labelledby="shipping-heading" className="space-y-2">
+                                    <h4 id="shipping-heading" className="text-sm font-semibold">Shipping information</h4>
                                     <textarea
-                                        required
                                         value={shippingAddress}
                                         onChange={(event) =>
                                             setShippingAddress(
@@ -2858,7 +2900,70 @@ export default function Home() {
                                         rows={3}
                                         className={`w-full rounded-lg px-3 py-2.5 text-sm border outline-none resize-y ${isDark ? "bg-black border-white/10 text-white" : "bg-white border-zinc-200 text-zinc-900"}`}
                                     />
-                                )}
+                                </section>
+                                <section aria-labelledby="payment-heading" className="space-y-2">
+                                    <div className="flex items-center justify-between">
+                                        <h4 id="payment-heading" className="text-sm font-semibold">Demo payment details</h4>
+                                        <span className="rounded-full bg-amber-100 px-2 py-1 text-[10px] font-semibold uppercase tracking-wide text-amber-800">Demo only</span>
+                                    </div>
+                                    <input
+                                        autoComplete="cc-name"
+                                        value={cardholderName}
+                                        onChange={(event) => setCardholderName(event.target.value)}
+                                        placeholder="Cardholder name"
+                                        aria-label="Cardholder name"
+                                        className={`w-full rounded-lg px-3 py-2.5 text-sm border outline-none ${isDark ? "bg-black border-white/10 text-white" : "bg-white border-zinc-200 text-zinc-900"}`}
+                                    />
+                                    <input
+                                        autoComplete="cc-number"
+                                        inputMode="numeric"
+                                        value={cardNumber}
+                                        onChange={(event) => setCardNumber(event.target.value.replace(/[^\d\s-]/g, "").slice(0, 23))}
+                                        placeholder="Card number"
+                                        aria-label="Card number"
+                                        className={`w-full rounded-lg px-3 py-2.5 text-sm border outline-none ${isDark ? "bg-black border-white/10 text-white" : "bg-white border-zinc-200 text-zinc-900"}`}
+                                    />
+                                    <div className="grid grid-cols-2 gap-2">
+                                        <input
+                                            autoComplete="cc-exp"
+                                            inputMode="numeric"
+                                            value={expiryDate}
+                                            onChange={(event) => {
+                                                const digits = event.target.value.replace(/\D/g, "").slice(0, 4);
+                                                setExpiryDate(digits.length > 2 ? `${digits.slice(0, 2)}/${digits.slice(2)}` : digits);
+                                            }}
+                                            placeholder="Expiry date (MM/YY)"
+                                            aria-label="Expiry date (MM/YY)"
+                                            className={`min-w-0 rounded-lg px-3 py-2.5 text-sm border outline-none ${isDark ? "bg-black border-white/10 text-white" : "bg-white border-zinc-200 text-zinc-900"}`}
+                                        />
+                                        <input
+                                            autoComplete="cc-csc"
+                                            inputMode="numeric"
+                                            value={cvv}
+                                            onChange={(event) => setCvv(event.target.value.replace(/\D/g, "").slice(0, 4))}
+                                            placeholder="CVV"
+                                            aria-label="CVV"
+                                            className={`min-w-0 rounded-lg px-3 py-2.5 text-sm border outline-none ${isDark ? "bg-black border-white/10 text-white" : "bg-white border-zinc-200 text-zinc-900"}`}
+                                        />
+                                    </div>
+                                </section>
+                                <section aria-labelledby="summary-heading" className="space-y-2 border-t pt-3">
+                                    <h4 id="summary-heading" className="text-sm font-semibold">Order summary</h4>
+                                    <div className="max-h-32 space-y-1 overflow-y-auto">
+                                        {checkoutItems.map((item) => (
+                                            <div key={item.product.id} className="flex justify-between gap-3 text-sm">
+                                                <span className="min-w-0 truncate">{item.product.title} × {item.quantity}</span>
+                                                <span className="shrink-0">{formatPrice(item.product.price * item.quantity)}</span>
+                                            </div>
+                                        ))}
+                                    </div>
+                                    <div className="flex justify-between text-sm">
+                                        <span>Subtotal</span><span>{formatPrice(cartSubtotal)}</span>
+                                    </div>
+                                    <div className="flex justify-between font-semibold">
+                                        <span>Total (USD)</span><span>{formatPrice(cartSubtotal)}</span>
+                                    </div>
+                                </section>
                                 {checkoutError && (
                                     <p
                                         role="alert"
@@ -2872,7 +2977,7 @@ export default function Home() {
                                     className={`w-full py-3 rounded-lg text-sm font-semibold cursor-pointer disabled:opacity-50 ${isDark ? "bg-white text-black" : "bg-zinc-900 text-white"}`}>
                                     {checkoutSubmitting ?
                                         "Submitting..."
-                                    :   `Place demo order · ${formatPrice(cartSubtotal)}`
+                                    :   `Pay ${formatPrice(cartSubtotal)}`
                                     }
                                 </button>
                                 <button
