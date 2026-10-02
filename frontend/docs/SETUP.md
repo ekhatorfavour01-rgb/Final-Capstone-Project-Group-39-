@@ -1,54 +1,45 @@
 # Local Setup
 
-## 1. Prerequisites
-- Node.js 18+
-- pnpm (`npm install -g pnpm`)
-- PostgreSQL running locally OR a free cloud DB (Neon / Supabase / Railway) — **only for full backend; not needed for mock UI**
+The application has a Next.js storefront and an Express API backed by MongoDB.
 
-## 2. Clone and install
-```bash
-git clone <repo-url>
-cd project-39-ecommerce
-pnpm install
-# do NOT run pnpm approve-builds / prisma generate until you need the DB
-```
+## Backend
 
-## 3. Environment variables
+1. Start MongoDB locally or use a reachable MongoDB Atlas cluster.
+2. In `Backend/`, create an ignored `.env` file with the backend settings:
 
-### Mock storefront (default — no env needed)
-No `.env` required. Just `pnpm dev`.
+   ```env
+   PORT=5001
+   MONGO_URI=mongodb://127.0.0.1:27017/project39
+   JWT_SECRET=replace-with-a-long-random-secret
+   JWT_EXPIRES_IN=7d
+   CORS_ORIGIN=http://localhost:3000
+   ```
 
-### Full backend
-Create `.env`:
-```env
-DATABASE_URL="postgresql://user:pass@localhost:5432/project39"
-JWT_SECRET="replace-with-long-random-string"
-NODE_ENV="development"
-```
+   Keep real database credentials and `JWT_SECRET` out of Git and the frontend.
+3. Run `npm ci`, then `npm run dev` from `Backend/`.
+4. Check `http://localhost:5001/` for the API health response.
 
-## 4. Migrate DB (backend only)
-```bash
-pnpm prisma migrate dev --name init
-```
+## Frontend
 
-## 5. (Optional) Seed
-```bash
-pnpm prisma db seed
-```
-Mock phase uses `lib/mock/products.ts` instead — 100+ image-backed products already ship with the repo.
+1. In `frontend/`, copy `.env.example` to `.env.local`.
+2. Set `NEXT_PUBLIC_API_BASE_URL=http://localhost:5001`. Use the backend origin only; do not append `/api`.
+3. Run `pnpm install` and `pnpm dev` from `frontend/`.
+4. Open `http://localhost:3000`, create an account, add an available product, and place a demo order with a shipping address.
 
-## 6. Run
-```bash
-pnpm dev
-```
-Open http://localhost:3000
+Without `NEXT_PUBLIC_API_BASE_URL`, the page uses its local demo catalog and cart. Restart the frontend after changing `.env.local`.
 
-## Frontend-only workflow (current)
-- Do not install Prisma/Postgres. UI is driven by `lib/mock/*` + `localStorage`
-- To go live later: add `DATABASE_URL` + `JWT_SECRET`, run `pnpm prisma migrate deploy`, replace mock calls with `fetch('/api/...')` — zero UI changes
+## Catalog and pricing
 
-## Common issues
-- **"Cannot find module"** → run `pnpm add <pkg>`
-- **Prisma "engine not found"** → `pnpm approve-builds` then `pnpm prisma generate` (backend only)
-- **DB connection refused** → check `DATABASE_URL`, ensure Postgres is running
-- **Mock data not showing** → clear `localStorage` and reload; mock re-hydrates from `lib/mock/products.ts`
+In API mode, MongoDB is the source of truth for the catalog. To insert missing copies of the 40 storefront products into the configured database, run `pnpm run seed:products` from `Backend/`. The repeatable seed generates MongoDB ObjectIds, assigns stock `10` to new catalog records, leaves existing records untouched, and does not delete data. It preserves each product's numeric USD price; the storefront displays prices with `$` and does not convert currencies.
+
+The seed loads `Backend/.env` from its script-relative path. It allows local MongoDB by default. For a remote URI, it refuses to run unless `CONFIRM_REMOTE_PRODUCT_SEED=true` is explicitly set after verifying the database target. Confirm that the URI targets the intended environment before running a remote seed.
+
+Product creation is admin-only at `POST /api/admin/products`; public registration creates a normal customer account. Provision administrator access securely on the backend.
+
+## Audit logs
+
+An administrator can inspect recorded activity with `GET /api/admin/audit-logs?page=1&limit=25` using an admin bearer token. Optional filters include `userId` and an action such as `cart.item_added`. Events are stored in MongoDB's `auditlogs` collection.
+
+## Demo checkout
+
+Checkout creates an order from the user's persisted MongoDB cart. The backend calculates the USD total from product prices and quantities and records the demo order as paid. No payment provider is connected, and no real payment is processed.

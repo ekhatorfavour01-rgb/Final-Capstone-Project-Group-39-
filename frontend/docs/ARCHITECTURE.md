@@ -1,97 +1,23 @@
 # Architecture
 
 ## Overview
-Single Next.js app serves both frontend (React pages) and backend (API routes).
-Prisma talks to PostgreSQL. Auth via JWT in httpOnly cookie.
 
-> **Current mock phase:** UI in `app/page.tsx` runs without any API — products/cart/orders live in `lib/mock/*` + `localStorage`. The structure below is the target; mock modules mirror the same shapes so swapping `fetch('/api/...')` later is a find-replace.
+The application has two separately deployed services:
 
-## Folder Structure
-```
-src/
-├── app/
-│   ├── api/                    # backend
-│   │   ├── auth/
-│   │   │   ├── register/route.ts
-│   │   │   ├── login/route.ts
-│   │   │   ├── logout/route.ts
-│   │   │   └── me/route.ts
-│   │   ├── products/
-│   │   │   ├── route.ts
-│   │   │   └── [id]/route.ts
-│   │   ├── cart/
-│   │   │   ├── route.ts
-│   │   │   └── items/[id]/route.ts
-│   │   ├── orders/
-│   │   │   ├── route.ts
-│   │   │   └── [id]/route.ts
-│   │   └── admin/
-│   │       └── orders/[id]/route.ts
-│   ├── (auth)/login/page.tsx
-│   ├── (auth)/register/page.tsx
-│   ├── products/page.tsx
-│   ├── products/[id]/page.tsx
-│   ├── cart/page.tsx
-│   ├── checkout/page.tsx
-│   ├── orders/page.tsx
-│   ├── orders/[id]/page.tsx
-│   ├── admin/products/page.tsx
-│   ├── admin/orders/page.tsx
-│   ├── about/page.tsx
-│   └── page.tsx                # landing — project-39 mock (now) → real catalog later
-├── components/                 # Navbar, ProductCard, CartItem, etc.
-├── lib/
-│   ├── prisma.ts               # Prisma singleton
-│   ├── auth.ts                 # JWT sign/verify, getSession
-│   ├── validators.ts           # Zod schemas
-│   └── mock/                   # added for frontend-only phase
-│       ├── products.ts         # 100+ items with Unsplash images
-│       ├── categories.ts       # table-driven nav labels
-│       └── store.ts            # cart/orders localStorage helpers
-├── middleware.ts               # protects /admin and /api/admin
-└── types/index.ts
-prisma/
-└── schema.prisma
-```
+- `frontend/` is a Next.js/React storefront. `lib/api.ts` sends browser requests to the backend origin configured by `NEXT_PUBLIC_API_BASE_URL`.
+- `Backend/` is an Express API using Mongoose and MongoDB. Its routes are mounted under `/api`; its root route is a health check.
 
-Actual current layout (before `src/` move) — `app/`, `components/`, `lib/`, `hooks/` at root — is functionally identical.
+The frontend can run without the API URL using its local demo catalog. API mode loads products and uses MongoDB IDs, bearer-token authentication, and a persistent server-side cart.
 
-## Data Model
-- User  1─1 Cart  1─n CartItem
-- User  1─n Order 1─n OrderItem
-- Order 1─1 Payment
-- Category 1─n Product
-- Product 1─n CartItem / OrderItem
+## Request Flow
 
-Mock mirrors this: `Category` and `Product` are plain TS arrays; `Cart`/`Order` live in `localStorage`.
+1. The storefront requests `GET /api/products` for the catalog.
+2. Registration or login returns a JWT. The frontend sends it in `Authorization: Bearer <token>` for protected requests.
+3. Cart reads and changes use `/api/cart` and `/api/cart/:productId`.
+4. Checkout sends `{ shippingAddress }` to `POST /api/orders`. The backend creates an order from the authenticated user's cart, updates stock, and clears the cart.
 
-## Auth Flow
-1. `POST /api/auth/register` → hash password → create user → sign JWT → set cookie
-2. `POST /api/auth/login` → verify password → sign JWT → set cookie
-3. `GET /api/auth/me` → read cookie → verify JWT → return user
-4. `middleware.ts` blocks `/admin/*` and `/api/admin/*` if role !== ADMIN
+## Deployment Configuration
 
-Mock: auth is simulated (any email/password works, role stored in `localStorage`), so UI can be exercised without a DB.
+The frontend needs only the public backend origin in `NEXT_PUBLIC_API_BASE_URL`. The backend separately needs `MONGO_URI`, `JWT_SECRET`, `PORT`, and a production `CORS_ORIGIN` matching the frontend origin. Never put database credentials or the JWT signing secret in the frontend.
 
-## Order Flow (transactional)
-1. Read user's cart + items
-2. Validate stock for each item
-3. Create Order + OrderItems (priceAtPurchase snapshot)
-4. Decrement Product.stock
-5. Create Payment (status = PAID, mock)
-6. Clear cart
-All inside `prisma.$transaction(...)` so partial failures roll back.
-
-Mock: same steps run synchronously in `lib/mock/store.ts` (no transaction, but stock is not persisted across reloads — intentional for demo).
-
-## Table-driven navigation (Temu/AliExpress parity)
-Nav labels come from `lib/mock/categories.ts` / later `Category` table. Adding a new top-level section is an insert, not a code change:
-```ts
-// lib/mock/categories.ts
-export const NAV = [
-  { label: "Topwear", items: ["Casual Shirts", "T-Shirts", ...] },
-  { label: "Bottomwear", items: ["Jeans", ...] },
-  // ...
-]
-```
-`Today's Deal` mega-menu renders directly from this array — see `app/page.tsx` (`showMega` section). This is what lets the store feel alive while we swap in real images per category (100s of Unsplash/Picsum URLs per category, not hard-coded per product).
+The current order flow is a demo, not a payment integration: order creation sets `paymentStatus` to `Paid`, but no provider processes or verifies money.

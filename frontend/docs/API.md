@@ -1,70 +1,55 @@
 # API Documentation
 
-Base URL: `/api`
-All responses: `{ success: boolean, data?: any, message?: string }`
+The frontend connects to the separately deployed Express API using `NEXT_PUBLIC_API_BASE_URL` (for example, `http://localhost:5001`). Responses use `{ success, message, data }`.
 
-> Mock phase: these endpoints are not yet mounted — `lib/mock/*` returns the same shapes locally. When the backend is wired, the documented contracts below are what the frontend will call.
+## Authentication
 
-## Auth
-| Method | Endpoint | Auth | Body | Success | Errors |
-|---|---|---|---|---|---|
-| POST | `/auth/register` | No | `{name,email,password}` | 201 user | 400 invalid, 409 email taken |
-| POST | `/auth/login` | No | `{email,password}` | 200 user + cookie | 401 invalid |
-| POST | `/auth/logout` | Yes | — | 200 | 401 |
-| GET | `/auth/me` | Yes | — | 200 user | 401 |
+| Method | Endpoint             | Auth | Body                        | Result             |
+| ------ | -------------------- | ---- | --------------------------- | ------------------ |
+| POST   | `/api/auth/register` | No   | `{ name, email, password }` | User and JWT token |
+| POST   | `/api/auth/login`    | No   | `{ email, password }`       | User and JWT token |
+
+Protected requests send `Authorization: Bearer <token>`. Registration does not allow clients to choose an account role.
 
 ## Products
-| Method | Endpoint | Auth | Notes |
-|---|---|---|---|
-| GET | `/products?search=&page=&limit=` | No | paginated list |
-| GET | `/products/:id` | No | details |
-| POST | `/products` | Admin | `{name,description,price,stock,categoryId,imageUrl?}` |
-| PATCH | `/products/:id` | Admin | partial update |
-| DELETE | `/products/:id` | Admin | 204 |
+
+| Method | Endpoint                                       | Auth | Result                     |
+| ------ | ---------------------------------------------- | ---- | -------------------------- |
+| GET    | `/api/products?search=&category=&page=&limit=` | No   | `{ products, pagination }` |
+| GET    | `/api/products/:id`                            | No   | One product                |
+
+Product fields include MongoDB `_id`, `name`, `description`, `price`, `stock`, `category`, and `image`.
 
 ## Cart
-| Method | Endpoint | Auth | Body |
-|---|---|---|---|
-| GET | `/cart` | Yes | — |
-| POST | `/cart/items` | Yes | `{productId, quantity}` |
-| PATCH | `/cart/items/:id` | Yes | `{quantity}` |
-| DELETE | `/cart/items/:id` | Yes | — |
+
+| Method | Endpoint               | Auth | Body                      |
+| ------ | ---------------------- | ---- | ------------------------- |
+| GET    | `/api/cart`            | Yes  | —                         |
+| POST   | `/api/cart`            | Yes  | `{ productId, quantity }` |
+| PATCH  | `/api/cart/:productId` | Yes  | `{ quantity }`            |
+| DELETE | `/api/cart/:productId` | Yes  | —                         |
+| DELETE | `/api/cart`            | Yes  | Clear cart                |
 
 ## Orders
-| Method | Endpoint | Auth | Body |
-|---|---|---|---|
-| POST | `/orders` | Yes | `{shippingAddress, paymentMethod}` → creates order from cart |
-| GET | `/orders` | Yes | list own orders |
-| GET | `/orders/:id` | Yes | own order only |
-| GET | `/admin/orders` | Admin | all orders |
-| PATCH | `/admin/orders/:id` | Admin | `{status}` |
 
-## Error Codes
-- 400 Bad Request — validation failed
-- 401 Unauthorized — missing/invalid token
-- 403 Forbidden — wrong role
-- 404 Not Found
-- 409 Conflict — duplicate email, etc.
-- 500 Server Error
+| Method | Endpoint                | Auth | Body                             |
+| ------ | ----------------------- | ---- | -------------------------------- |
+| POST   | `/api/orders`           | Yes  | `{ shippingAddress }`            |
+| GET    | `/api/orders/my-orders` | Yes  | Current user's orders            |
+| GET    | `/api/orders/:id`       | Yes  | One of the current user's orders |
 
-## Example
-```http
-POST /api/auth/register
-Content-Type: application/json
+The current checkout is a demo only: it creates an order from the server-side cart and the backend marks it `Paid`, but no payment provider or real charge is involved. Do not collect or submit card details through this flow.
 
-{ "name": "Jane", "email": "jane@x.com", "password": "Secret123!" }
-```
-```json
-{
-  "success": true,
-  "data": { "id": "ck...", "name": "Jane", "email": "jane@x.com", "role": "CUSTOMER" }
-}
-```
+## Admin
 
-## Mock equivalents (today)
-| API | Mock call |
-|---|---|
-| `GET /products?search=` | `searchProducts(q)` in `lib/mock/products.ts` |
-| `POST /cart/items` | `addToCart(productId, qty)` in `lib/mock/store.ts` |
-| `POST /orders` | `checkout(address, method)` in `lib/mock/store.ts` |
-Shapes match 1:1 so tests written against mocks pass against the real API later.
+Admin endpoints are under `/api/admin` and require an admin bearer token. Product creation is `POST /api/admin/products` with `{ name, description, price, stock, category, image? }`; order status updates use `PUT /api/admin/orders/:id/status` with `{ status }`.
+
+| Method | Endpoint                | Query parameters                                                | Result                         |
+| ------ | ----------------------- | --------------------------------------------------------------- | ------------------------------ |
+| GET    | `/api/admin/audit-logs` | `page`, `limit` (max 100), optional `userId`, optional `action` | Paginated events, newest first |
+
+Audit events are stored in MongoDB's `auditlogs` collection. Successful registration, login, cart add/update/remove/clear, and order creation are recorded. The log stores user/target IDs and limited numeric details; it does not store passwords, JWTs, shipping addresses, or card data. Failed actions are not recorded as successful activity. Audit writes are best-effort: write failures are reported in the backend logs and do not turn a completed user action into an API error.
+
+## Health Check
+
+`GET /` returns `{ success: true, message: "E-commerce API is running" }` and does not require authentication.
