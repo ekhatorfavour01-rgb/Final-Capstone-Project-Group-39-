@@ -1,136 +1,31 @@
-# Database Schema
+# Database
 
-## Entities
-| Table | Purpose |
-|---|---|
-| User | Customers and admins |
-| Category | Product grouping |
-| Product | Items for sale |
-| Cart | One per user |
-| CartItem | Products in a cart with qty |
-| Order | A completed checkout |
-| OrderItem | Snapshot of items at purchase time |
-| Payment | Mock payment record |
+## Source of truth
 
-## Status Enums
-- **Role:** CUSTOMER | ADMIN
-- **OrderStatus:** PENDING | PAID | SHIPPED | DELIVERED | CANCELLED
-- **PaymentStatus:** PENDING | PAID | FAILED | REFUNDED
+The production application uses MongoDB through Mongoose in `Backend/`. The backend database is the source of truth for products, carts, and orders. In API mode, the storefront loads products from `GET /api/products`; it does not merge those records with the frontend demo catalog. The demo catalog is used only when the API URL is not configured.
 
-## Prisma Schema
-```prisma
-generator client { provider = "prisma-client-js" }
-datasource db { provider = "postgresql"; url = env("DATABASE_URL") }
+## Collections
 
-enum Role { CUSTOMER ADMIN }
-enum OrderStatus { PENDING PAID SHIPPED DELIVERED CANCELLED }
-enum PaymentStatus { PENDING PAID FAILED REFUNDED }
+| Collection | Purpose |
+| --- | --- |
+| `users` | Customer and administrator accounts; passwords are stored as hashes. |
+| `products` | Product details, including brand, category, price, stock, and storefront metadata. |
+| `carts` | One persisted cart per user, with product ObjectIds and quantities. |
+| `orders` | Completed demo orders with item snapshots, `totalAmount`, status, and shipping address. |
+| `auditlogs` | Limited activity events for account, cart, and order actions. |
 
-model User {
-  id           String   @id @default(cuid())
-  name         String
-  email        String   @unique
-  passwordHash String
-  role         Role     @default(CUSTOMER)
-  createdAt    DateTime @default(now())
-  cart         Cart?
-  orders       Order[]
-}
+The corresponding Mongoose models are in `Backend/Models/`. Order line items are embedded snapshots, so the order retains the product name, unit price, and quantity used at checkout. Product and order identifiers are MongoDB ObjectIds.
 
-model Category {
-  id       String    @id @default(cuid())
-  name     String    @unique
-  slug     String    @unique
-  products Product[]
-}
+## Prices
 
-model Product {
-  id          String      @id @default(cuid())
-  name        String
-  description String
-  price       Decimal     @db.Decimal(10,2)
-  stock       Int         @default(0)
-  imageUrl    String?
-  categoryId  String
-  category    Category    @relation(fields: [categoryId], references: [id])
-  cartItems   CartItem[]
-  orderItems  OrderItem[]
-  createdAt   DateTime    @default(now())
-}
+Product `price` and optional `oldPrice` values are numeric USD amounts. The application preserves those numbers and displays them with `$`; it performs no currency conversion. Order totals are calculated by the backend from the authenticated user's persisted cart and saved as `totalAmount` in USD.
 
-model Cart {
-  id        String     @id @default(cuid())
-  userId    String     @unique
-  user      User       @relation(fields: [userId], references: [id])
-  items     CartItem[]
-  createdAt DateTime   @default(now())
-}
+## Product catalog seed
 
-model CartItem {
-  id        String  @id @default(cuid())
-  cartId    String
-  productId String
-  quantity  Int
-  cart      Cart    @relation(fields: [cartId], references: [id], onDelete: Cascade)
-  product   Product @relation(fields: [productId], references: [id])
-  @@unique([cartId, productId])
-}
+The 40 storefront catalog records live in `Backend/data/productCatalog.js`. From `Backend/`, run `pnpm run seed:products` to insert missing products. MongoDB generates ObjectIds, and missing catalog products receive stock `10`. The seed matches records by name and uses insert-only upserts, so rerunning it does not duplicate catalog records or overwrite existing products.
 
-model Order {
-  id              String       @id @default(cuid())
-  userId          String
-  user            User         @relation(fields: [userId], references: [id])
-  total           Decimal      @db.Decimal(10,2)
-  status          OrderStatus  @default(PENDING)
-  shippingAddress String
-  items           OrderItem[]
-  payment         Payment?
-  createdAt       DateTime     @default(now())
-}
+The seed loads `Backend/.env` relative to its own script location. It permits local MongoDB by default and refuses remote database URIs unless `CONFIRM_REMOTE_PRODUCT_SEED=true` is explicitly set after verifying the target. It never deletes existing products.
 
-model OrderItem {
-  id              String  @id @default(cuid())
-  orderId         String
-  productId       String
-  quantity        Int
-  priceAtPurchase Decimal @db.Decimal(10,2)
-  order           Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
-  product         Product @relation(fields: [productId], references: [id])
-}
+## Demo mode
 
-model Payment {
-  id        String        @id @default(cuid())
-  orderId   String        @unique
-  order     Order         @relation(fields: [orderId], references: [id])
-  method    String
-  status    PaymentStatus @default(PENDING)
-  amount    Decimal       @db.Decimal(10,2)
-  reference String        @unique
-  createdAt DateTime      @default(now())
-}
-```
-
-## Setup
-```bash
-pnpm prisma migrate dev --name init
-pnpm prisma generate
-pnpm prisma studio        # optional GUI
-```
-
-## Seed (optional)
-Add a `prisma/seed.ts` that creates:
-- 1 admin: admin@shop.com / Admin123!
-- 3 categories
-- 10 products
-Run with `pnpm prisma db seed`.
-
-For frontend-only phase, seed is simulated by `lib/mock/products.ts` — 100+ products with real image URLs (Unsplash) so the catalog looks production-ready before Postgres is provisioned.
-
-## Mock ↔ Prisma parity
-| Mock file | Prisma model |
-|---|---|
-| `lib/mock/categories.ts` | `Category` |
-| `lib/mock/products.ts` | `Product` |
-| `localStorage: cart` | `Cart` + `CartItem` |
-| `localStorage: orders` | `Order` + `OrderItem` + `Payment` |
-When the DB goes live, these files become thin fetch wrappers around `/api/*` — no component changes needed.
+When `NEXT_PUBLIC_API_BASE_URL` is unset, the storefront uses its local demo catalog and in-memory cart. This data is not persisted to MongoDB. When the API URL is configured, catalog, cart, and orders use the backend and MongoDB IDs.

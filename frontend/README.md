@@ -10,9 +10,7 @@ The application is structured as a full-stack system, with the frontend serving 
 
 ### Current Development Stage
 
-The current implementation focuses on the **frontend and application structure**.
-
-The frontend currently uses **mock data** to demonstrate the intended e-commerce experience. The production database, backend APIs, authentication system, persistent order management, and live payment processing are planned for subsequent development stages.
+The storefront can run in demo mode or connect to the team's separate Express/MongoDB API. When `NEXT_PUBLIC_API_BASE_URL` is set, products, authentication, cart changes, and demo order placement use the backend. Without it, the page keeps its local demo catalog and cart.
 
 ---
 
@@ -20,24 +18,23 @@ The frontend currently uses **mock data** to demonstrate the intended e-commerce
 
 The current frontend implementation includes:
 
-* Product catalogue
-* Product categories
-* Product search
-* Product filtering
-* Product sorting
-* Product cards
-* Product images
-* Discount displays
-* Wishlist interface
-* Shopping cart
-* Quantity management
-* Checkout interface
-* Order history
-* Order status
-* Responsive layouts
-* Mock product data
-* Mock category data
-* Mock order data
+- Product catalogue
+- Product categories
+- Product search
+- Product filtering
+- Product sorting
+- Product cards
+- Product images
+- Discount displays
+- Wishlist interface
+- Shopping cart
+- Quantity management
+- Checkout interface
+- Account registration and sign-in
+- Backend-backed cart and order creation
+- Responsive layouts
+- Demo catalog fallback when the API URL is not configured
+- Persistent backend cart and demo orders when connected
 
 ---
 
@@ -60,9 +57,7 @@ Review Cart
     ↓
 Checkout
     ↓
-View Order
-    ↓
-Track Order
+Create Demo Order
 ```
 
 ---
@@ -73,22 +68,20 @@ The project is built around a modern web application architecture.
 
 ### Frontend
 
-* Next.js
-* React
-* TypeScript
-* Tailwind CSS
+- Next.js
+- React
+- TypeScript
+- Tailwind CSS
 
-### Planned Backend
+### Backend API
 
-* Next.js API routes
-* Prisma
-* PostgreSQL
-* JWT authentication
-* Zod validation
+- Express
+- MongoDB with Mongoose
+- JWT authentication
 
-### Planned Payment Provider
+### Payment Behavior
 
-* Paystack
+Checkout currently creates a backend order for testing; it does not use a payment provider or charge money.
 
 ---
 
@@ -96,40 +89,17 @@ The project is built around a modern web application architecture.
 
 ```text
 .
-├── app/
-│   ├── page.tsx
-│   ├── api/
-│   └── admin/
-│
-├── lib/
-│   └── mock/
-│       ├── products.ts
-│       ├── categories.ts
-│       └── store.ts
-│
-├── docs/
-│   ├── ARCHITECTURE.md
-│   ├── DATABASE.md
-│   ├── API.md
-│   ├── SETUP.md
-│   ├── SECURITY.md
-│   ├── TESTING.md
-│   ├── DEPLOYMENT.md
-│   ├── GIT_WORKFLOW.md
-│   └── TASKS.md
-│
-├── REPORT.md
-├── README.md
-└── .env.example
+├── app/page.tsx       # Next.js storefront
+├── lib/api.ts         # Express API client
+├── .env.example       # Public API origin example
+└── docs/              # Setup, API, and deployment guides
 ```
-
-The exact structure may expand as the backend and other project components are implemented.
 
 ---
 
 ## Running the Current Frontend
 
-The current frontend uses mock data and is intended to demonstrate the application without requiring a production database.
+The API URL is configured in `frontend/.env.local`. Start MongoDB and the backend first, then start the frontend. See [docs/SETUP.md](docs/SETUP.md) for exact steps. Without the API URL, the frontend starts in demo mode.
 
 ### Install Dependencies
 
@@ -145,131 +115,37 @@ pnpm install
 pnpm dev
 ```
 
-Open the local development address provided by Next.js.
+Open `http://localhost:3000`.
 
----
+## Integration Notes
 
-## Mock Data
+When connected, the page loads products from `GET /api/products`, authenticates through `/api/auth/register` and `/api/auth/login`, persists cart changes through `/api/cart`, and creates orders through `POST /api/orders`. See [docs/API.md](docs/API.md) for the actual request contracts.
 
-The current frontend uses mock data for the information normally expected from the backend.
-
-This includes:
-
-* Products
-* Categories
-* Product prices
-* Discounts
-* Product images
-* Stock information
-* Orders
-* Order statuses
-
-The mock data allows the frontend experience to be developed before the database and API services are connected.
-
----
-
-## Planned Backend
-
-The completed system is expected to include backend services for:
-
-### Authentication
-
-* Registration
-* Login
-* JWT authentication
-* Protected routes
-* Role-based access
-
-### Products
-
-* Product retrieval
-* Search
-* Filtering
-* Pagination
-* Product management
-
-### Cart
-
-* Add item
-* Update quantity
-* Remove item
-* Stock validation
-* Persistent cart
-
-### Orders
-
-* Order creation
-* Order history
-* Order status
-* Order management
-* Stock updates
-
-### Payments
-
-* Payment initialization
-* Paystack checkout
-* Payment verification
-* Payment confirmation
-
-### Administration
-
-* Product management
-* Order management
-* Administrative access control
-
----
-
-## Planned Payment Flow
-
-Paystack will be integrated as the payment provider.
-
-The intended flow is:
-
-```text
-Customer Checkout
-       ↓
-Payment Initialization
-       ↓
-Paystack
-       ↓
-Payment Verification
-       ↓
-Order Confirmation
-```
-
-The current frontend only provides the checkout interface. Live payment processing will be implemented as part of the backend integration.
+Without the API environment variable the existing in-memory demo catalog remains available. The backend checkout is also a demo: it creates an order and marks it paid without processing a payment. No card information is required or accepted.
 
 ---
 
 ## Development Roadmap
 
-### Completed at the Current Stage
+### Current
 
-* Frontend application structure
-* Storefront interface
-* Product catalogue
-* Product categories
-* Search
-* Filtering
-* Cart interface
-* Checkout interface
-* Order interface
-* Responsive layouts
-* Mock data
+- Frontend application structure
+- Storefront interface
+- Product catalogue
+- Product categories
+- Search
+- Filtering
+- Cart interface
+- Checkout interface
+- API-backed sign-in, cart, and demo order creation
+- Responsive layouts
+- Mock data
 
-### Upcoming
+### Still Needed for Production Payments
 
-* PostgreSQL database
-* Prisma integration
-* Backend API
-* Authentication
-* Persistent cart
-* Persistent orders
-* Stock management
-* Admin backend
-* Paystack integration
-* Automated testing
-* Production deployment
+- Payment provider sandbox integration
+- Server-side payment verification/webhooks
+- Review token storage and production security
 
 ---
 
@@ -280,8 +156,8 @@ Additional project documentation is organized in the `docs` directory.
 | File              | Description                            |
 | ----------------- | -------------------------------------- |
 | `ARCHITECTURE.md` | Overall application architecture       |
-| `DATABASE.md`     | Planned database structure             |
-| `API.md`          | Planned API endpoints and contracts    |
+| `DATABASE.md`     | Database structure                     |
+| `API.md`          | Express API endpoints and contracts    |
 | `SETUP.md`        | Project setup instructions             |
 | `SECURITY.md`     | Security considerations                |
 | `TESTING.md`      | Testing strategy                       |
@@ -294,21 +170,13 @@ Additional project documentation is organized in the `docs` directory.
 
 ## Development Approach
 
-The project currently follows a **frontend-first, mock-data approach**.
-
-This allows the user interface and core user experience to be developed independently from the backend.
-
-Once the backend becomes available, the mock data and frontend state can be replaced with API-driven data and persistent database operations.
-
-The objective is to maintain a clear separation between the user interface and the underlying data services.
+The frontend and API are separate services. Set the backend origin in the frontend environment rather than exposing database credentials in browser code.
 
 ---
 
 ## Project Status
 
-**Current stage: Frontend implementation with mock data**
-
-The application currently demonstrates the intended e-commerce user experience. Backend integration and production services remain part of the subsequent development stages.
+**Current stage: Frontend connected to Express/MongoDB API with demo checkout**
 
 ---
 

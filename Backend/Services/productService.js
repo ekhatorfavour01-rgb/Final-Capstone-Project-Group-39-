@@ -4,7 +4,7 @@ const getAllProducts = async ({
   search,
   category,
   page = 1,
-  limit = 10,
+  limit = 100,
 }) => {
   const filter = {};
 
@@ -22,7 +22,9 @@ const getAllProducts = async ({
   }
 
   const currentPage = Math.max(Number(page) || 1, 1);
-  const pageSize = Math.max(Number(limit) || 10, 1);
+  // Keep the public listing useful for the full storefront catalog while
+  // still bounding caller-provided limits to avoid unbounded queries.
+  const pageSize = Math.min(Math.max(Number(limit) || 100, 1), 500);
 
   const skip = (currentPage - 1) * pageSize;
 
