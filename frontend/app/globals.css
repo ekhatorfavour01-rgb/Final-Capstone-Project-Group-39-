@@ -3,6 +3,11 @@
 @import "shadcn/tailwind.css";
 
 @custom-variant dark (&:is(.dark *));
+/* 
+  This file is used to define global CSS variables for the application. 
+  It includes color definitions, font settings, and other design tokens.
+  The variables are defined for both light and dark themes.
+*/
 
 @theme inline {
   --color-background: var(--background);
