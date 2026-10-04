@@ -1,4 +1,5 @@
 "use client";
+import Link from "next/link";
 import { useEffect, useState, useMemo, type FormEvent } from "react";
 import {
     addCartItem as addRemoteCartItem,
@@ -3039,27 +3040,27 @@ export default function Home() {
                                 className={`font-semibold mb-2 ${isDark ? "text-white" : "text-zinc-900"}`}>
                                 Company
                             </p>
-                            <p>About</p>
-                            <p>Careers</p>
-                            <p>Contact</p>
+                            <Link href="/about" className="block hover:text-[#ff2a5a]">About</Link>
+                            <Link href="/careers" className="block hover:text-[#ff2a5a]">Careers</Link>
+                            <Link href="/contact" className="block hover:text-[#ff2a5a]">Contact</Link>
                         </div>
                         <div>
                             <p
                                 className={`font-semibold mb-2 ${isDark ? "text-white" : "text-zinc-900"}`}>
                                 Support
                             </p>
-                            <p>Shipping</p>
-                            <p>Returns</p>
-                            <p>FAQ</p>
+                            <Link href="/shipping" className="block hover:text-[#ff2a5a]">Shipping</Link>
+                            <Link href="/returns" className="block hover:text-[#ff2a5a]">Returns</Link>
+                            <Link href="/faq" className="block hover:text-[#ff2a5a]">FAQ</Link>
                         </div>
                         <div>
                             <p
                                 className={`font-semibold mb-2 ${isDark ? "text-white" : "text-zinc-900"}`}>
                                 Legal
                             </p>
-                            <p>Privacy</p>
-                            <p>Terms</p>
-                            <p>Warranty</p>
+                            <Link href="/privacy" className="block hover:text-[#ff2a5a]">Privacy</Link>
+                            <Link href="/terms" className="block hover:text-[#ff2a5a]">Terms</Link>
+                            <Link href="/warranty" className="block hover:text-[#ff2a5a]">Warranty</Link>
                         </div>
                     </div>
                 </div>
@@ -3071,3 +3072,4 @@ export default function Home() {
         </div>
     );
 }
+
