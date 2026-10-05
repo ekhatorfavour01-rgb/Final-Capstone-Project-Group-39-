@@ -40,6 +40,7 @@ export type ApiOrder = {
     paymentStatus: string;
     createdAt?: string;
 };
+const API_REQUEST_TIMEOUT_MS = 15_000;
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL?.trim().replace(
     /\/+$/,
@@ -65,16 +66,33 @@ async function request<T>(
 
     let response: Response;
     try {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(
+        () => controller.abort(),
+        API_REQUEST_TIMEOUT_MS,
+    );
+
+    try {
         response = await fetch(`${API_BASE_URL}${path}`, {
             ...options,
             headers,
             cache: "no-store",
+            signal: controller.signal,
         });
-    } catch {
+    } finally {
+        clearTimeout(timeoutId);
+    }
+} catch (error) {
+    if (error instanceof Error && error.name === "AbortError") {
         throw new Error(
-            "Could not reach the backend. Check its URL and CORS configuration.",
+            "The backend request timed out. Please try again.",
         );
     }
+
+    throw new Error(
+        "Could not reach the backend. Check its URL and CORS configuration.",
+    );
+}
 
     const result = (await response.json().catch(() => null)) as {
         success?: boolean;
